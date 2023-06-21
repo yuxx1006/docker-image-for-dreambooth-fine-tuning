@@ -77,13 +77,13 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--instance_prompt",
         type=str,
-        default="photo of xyz person",
+        default="photo of zwx woman",
         help="The prompt with identifier specifying the instance",
     )
     parser.add_argument(
         "--class_prompt",
         type=str,
-        default="photo of a person",
+        default="photo of a wonman",
         help="The prompt to specify images in the same class as provided instance images.",
     )
     parser.add_argument(
@@ -723,44 +723,30 @@ def main(args):
                     shutil.copy(src_file, dst_file)
                 print("Inference code copied!")
             
-#             save_image_dir = args.image_output_dir
-            # hardcoded the prompts for different samples
-            positive_prompts = ["portrait of zwx as a female humanoid, intricate, retro 60 s fashion, elegant, with bright cyber neon lighting, highly detailed, digital photography, trending in artstation, glamor pose, concept art, smooth, sharp focus, art by artgerm and greg rutkowski and ilya kuvshinov",
-#             "A portrait of beautiful zwx as a beautiful woman, as realistic shaded lighting poster by ilya kuvshinov katsuhiro otomo, magali villeneuve, artgerm, jeremy lipkin and michael garmash and rob rey",
-#             "zwx as a beautiful female, goddess with fur coat with decollete and bra in winter, snow mountain, unpleasant face, bad looking, fine details, realistic shaded lighting poster by greg rutkowski, magali villeneuve, artgerm, jeremy lipkin and michael garmash and rob rey",
-#             "realistic portrait of zwx as a beautiful girl, goth vampire goddess with blue eyes, by jeremy mann and alphonse mucha and magali villeneuve, fantasy art, photo realistic, dynamic lighting, artstation, volumetric lighting, 4 k, dark fantasy, hyperrealistic portrait, very detailed face, award winning"
-            ]
-            #S3 bucket
-            S3_BUCKET = "stable-diffusion-sagemaker-dev"
-            MODEL_DIRECTORY = "custom-inference/images"
+            # hardcoded the prompts for testing samples
+            positive_prompts = ["model photoshoot of zwx, with a black background"]
+            S3_BUCKET = "YOUR_S3_BUCKET"
             s3 = boto3.resource('s3')
 
-            # if args.save_sample_prompt is not None:
             pipeline = pipeline.to(accelerator.device)
             g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
             pipeline.set_progress_bar_config(disable=True)
             sample_dir = os.path.join(save_dir, "samples")
-            # image_dir = os.path.join(save_image_dir,"samples")
-            # os.makedirs(image_dir, exist_ok=True)
             os.makedirs(sample_dir, exist_ok=True)
             with torch.autocast("cuda"), torch.inference_mode():
                 for j, each_prompt in enumerate(positive_prompts):
                     for i in tqdm(range(args.n_save_sample), desc="Generating samples"):
                         images = pipeline(
-                            # args.save_sample_prompt,
                             each_prompt,
                             negative_prompt=args.save_sample_negative_prompt,
                             guidance_scale=args.save_guidance_scale,
                             num_inference_steps=args.save_infer_steps,
                             generator=g_cuda
                         ).images
-                        # images[0].save(os.path.join(image_dir, f"{j}-{i}.png"))
                         images[0].save(os.path.join(sample_dir, f"{j}-{i}.png"))
-#                         s3.meta.client.upload_file(os.path.join(sample_dir, f"{j}-{i}.png"), S3_BUCKET, os.path.join(MODEL_DIRECTORY,f"{j}-{i}.png"))
             del pipeline
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            # print(f"[*] Images saved at {save_image_dir}")
             print(f"[*] Weights saved at {save_dir}")
 
     # Only show the progress bar once on each machine.
